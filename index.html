@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Notificate</title>
+  <!-- ico -->
+    <!-- <link rel="icon" href="https://cdn.glitch.com/7b3f3f3e-4b7b-4b7b-8b7b-3b7b7b7b7b7b%2Ffavicon.ico?v=1628580130000" type="image/x-icon"> -->
+    <link rel="icon" href="https://icon-icons.com/downloadimage.php?id=127318&root=2079/ICO/512/&file=japan_monk_asia_religion_buddhist_zen_japanese_traditional_icon_127318.ico" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            /* display contents in a column */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        div {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin: 0 0 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .bottom-div {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <h1>Schedule a sound</h1>
+        <input type="number" name="time" id="time" placeholder="Time in minutes" required>
+        <button onclick="scheduleSound()" disabled="true">Play Sound</button>
+    </div>
+
+    <div class="bottom-div">
+        <p>If the alarm is randomly stopping or the tab going to sleep, you probably need to disable your browser's sleep mode setting for this website. Here's how you can accomplish this:</p>
+        <!-- open a link in a new tab -->
+        <a href="https://help.mypurecloud.com/articles/disable-your-browsers-sleep-mode-setting" target="_blank">Disable your browser's sleep mode setting</a>
+    </div>
+
+  <script>
+
+    /* deactivate button if input is empty */
+    document.querySelector('input').addEventListener('input', function() {
+        const button = document.querySelector('button');
+        button.disabled = this.value === '';
+    });
+
+    // when user taps enter in the keyboard, it should trigger the button (if active)
+    document.querySelector('input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            if (!document.querySelector('button').disabled) {
+                scheduleSound();
+            }
+        }
+    });
+
+    // set a custom id for the paragraphs so we can update it later
+    var scheduled_sounds = 0;
+    var ids = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+    // Object to store the interval IDs for each scheduled sound
+    var intervals = {};
+
+    // function to map a number to a string with emojis
+    function mapNumberToEmoji(number) {
+        return number.toString().split('').map(digit => ids[digit]).join('');
+    }
+
+    // Function to play the sound
+    function playSound() {
+        const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_6a18dd2d2f.mp3');
+        audio.play();
+    }
+
+    // schedules the sound. it accomplishes that by:
+        // 1. creating a paragraph with the time to notify
+        // 2. updating the text based on the remaining time calculated from the start time
+        // 3. playing the sound after the time has passed
+    function scheduleSound() {
+
+        new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_6a18dd2d2f.mp3').play();
+
+        // Get the 'time' parameter (in minutes) from input box
+        const time_string = document.querySelector('input').value;
+        const timeInMinutes = parseInt(time_string);
+        const timeInSeconds = timeInMinutes * 60;
+
+        scheduled_sounds++;
+        const currentId = scheduled_sounds;
+        const currentClass = `sound-${currentId}`;
+        const paragraph_id_text = mapNumberToEmoji(currentId);
+
+        // Create a paragraph with the scheduled time information
+        const p = document.createElement('p');
+        p.textContent = `${paragraph_id_text} Time to notificate: `;
+        p.classList = [currentClass];
+        const span = document.createElement('span');
+        p.appendChild(span);
+        document.querySelector('div').appendChild(p);
+
+        const startTime = Date.now();
+        const endTime = startTime + timeInSeconds * 1000; // Calculate the end time
+
+        function updateTime() {
+            const now = Date.now();
+            let timeLeft = Math.round((endTime - now) / 1000); // Calculate remaining seconds
+
+            if (timeLeft < 0) {
+                clearInterval(intervals[currentClass]);
+                delete intervals[currentClass];
+                document.querySelector('.' + currentClass).remove();
+                playSound();
+                return;
+            }
+
+            const minutesLeft = Math.floor(timeLeft / 60);
+            const secondsLeft = timeLeft % 60;
+            document.querySelector('.' + currentClass + ' span').textContent = `${minutesLeft} minutes and ${secondsLeft} seconds`;
+        }
+
+        updateTime(); // Initial update
+        intervals[currentClass] = setInterval(updateTime, 1000);
+
+        // Select the input text
+        document.querySelector('input').select();
+    }
+
+    // Add visibility change listener to recalculate time when the tab becomes active
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) { // If the tab is now visible
+            // Iterate over all active intervals and recalculate the time
+            for (const className in intervals) {
+                const paragraph = document.querySelector('.' + className);
+                if (paragraph) {
+                    const parts = paragraph.textContent.split('Time to notificate: ');
+                    if (parts.length > 1) {
+                        const startTime = parseFloat(paragraph.dataset.startTime);
+                        const durationSeconds = parseFloat(paragraph.dataset.durationSeconds);
+                        if (startTime && durationSeconds) {
+                            const endTime = startTime + durationSeconds * 1000;
+                            const now = Date.now();
+                            let timeLeft = Math.round((endTime - now) / 1000);
+
+                            if (timeLeft < 0) {
+                                clearInterval(intervals[className]);
+                                delete intervals[className];
+                                paragraph.remove();
+                                playSound();
+                                continue;
+                            }
+
+                            const minutesLeft = Math.floor(timeLeft / 60);
+                            const secondsLeft = timeLeft % 60;
+                            paragraph.querySelector('span').textContent = `${minutesLeft} minutes and ${secondsLeft} seconds`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+  </script>
+
+</body>
+</html>
