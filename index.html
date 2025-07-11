@@ -71,7 +71,7 @@
     </div>
 
   <script>
-
+    
     /* deactivate button if input is empty */
     document.querySelector('input').addEventListener('input', function() {
         const button = document.querySelector('button');
@@ -88,108 +88,67 @@
     });
 
     // set a custom id for the paragraphs so we can update it later
-    var scheduled_sounds = 0;
-    var ids = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
-    // Object to store the interval IDs for each scheduled sound
-    var intervals = {};
-
+    var scheduled_sounds = 0
+    var ids = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
     // function to map a number to a string with emojis
     function mapNumberToEmoji(number) {
         return number.toString().split('').map(digit => ids[digit]).join('');
     }
 
-    // Function to play the sound
-    function playSound() {
-        const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_6a18dd2d2f.mp3');
-        audio.play();
-    }
-
     // schedules the sound. it accomplishes that by:
         // 1. creating a paragraph with the time to notify
-        // 2. updating the text based on the remaining time calculated from the start time
+        // 2. updating the text every second with the remaining time
         // 3. playing the sound after the time has passed
     function scheduleSound() {
-
+        
         new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_6a18dd2d2f.mp3').play();
-
-        // Get the 'time' parameter (in minutes) from input box
-        const time_string = document.querySelector('input').value;
-        const timeInMinutes = parseInt(time_string);
-        const timeInSeconds = timeInMinutes * 60;
+        
+        // Get the URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Get the 'time' parameter (in minutes) from input box, default time is 10 in case something goes wrong
+        const time_string = document.querySelector('input').value ?? '10';
+        const time = parseInt(time_string) * 60; // Convert to seconds
 
         scheduled_sounds++;
         const currentId = scheduled_sounds;
         const currentClass = `sound-${currentId}`;
         const paragraph_id_text = mapNumberToEmoji(currentId);
 
-        // Create a paragraph with the scheduled time information
+        // creates a paragraph with the following format
+        // <p hidden="true">Time to notificate: <span>10 minutes</span></p>
         const p = document.createElement('p');
-        p.textContent = `${paragraph_id_text} Time to notificate: `;
-        p.classList = [currentClass];
+        p.textContent = `${paragraph_id_text} ` + 'Time to notificate: ';
+        p.classList = [currentClass]
         const span = document.createElement('span');
+        span.textContent = `${time_string} minutes`;
         p.appendChild(span);
         document.querySelector('div').appendChild(p);
-
-        const startTime = Date.now();
-        const endTime = startTime + timeInSeconds * 1000; // Calculate the end time
-
-        function updateTime() {
-            const now = Date.now();
-            let timeLeft = Math.round((endTime - now) / 1000); // Calculate remaining seconds
-
-            if (timeLeft < 0) {
-                clearInterval(intervals[currentClass]);
-                delete intervals[currentClass];
+        
+        // Update the text every second with the remaining time.
+        var aux_time = time
+        var interval = setInterval(() => {
+            aux_time--;
+            const minutes = Math.floor(aux_time / 60);
+            const seconds = aux_time % 60;
+            document.querySelector('.' + currentClass + ' span').textContent = `${minutes} minutes and ${seconds} seconds`;
+            if (aux_time < 0) {
+                clearInterval(interval);
                 document.querySelector('.' + currentClass).remove();
-                playSound();
-                return;
             }
+        }, 1000);
 
-            const minutesLeft = Math.floor(timeLeft / 60);
-            const secondsLeft = timeLeft % 60;
-            document.querySelector('.' + currentClass + ' span').textContent = `${minutesLeft} minutes and ${secondsLeft} seconds`;
+        // Function to play the sound
+        function playSound() {
+            const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_6a18dd2d2f.mp3');
+            audio.play();
         }
-
-        updateTime(); // Initial update
-        intervals[currentClass] = setInterval(updateTime, 1000);
+        // setTimeout(playSound, time);
+        setTimeout(playSound, time * 1000); // Convert to miliseconds
 
         // Select the input text
         document.querySelector('input').select();
     }
-
-    // Add visibility change listener to recalculate time when the tab becomes active
-    document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) { // If the tab is now visible
-            // Iterate over all active intervals and recalculate the time
-            for (const className in intervals) {
-                const paragraph = document.querySelector('.' + className);
-                if (paragraph) {
-                    const parts = paragraph.textContent.split('Time to notificate: ');
-                    if (parts.length > 1) {
-                        const startTime = parseFloat(paragraph.dataset.startTime);
-                        const durationSeconds = parseFloat(paragraph.dataset.durationSeconds);
-                        if (startTime && durationSeconds) {
-                            const endTime = startTime + durationSeconds * 1000;
-                            const now = Date.now();
-                            let timeLeft = Math.round((endTime - now) / 1000);
-
-                            if (timeLeft < 0) {
-                                clearInterval(intervals[className]);
-                                delete intervals[className];
-                                paragraph.remove();
-                                playSound();
-                                continue;
-                            }
-
-                            const minutesLeft = Math.floor(timeLeft / 60);
-                            const secondsLeft = timeLeft % 60;
-                            paragraph.querySelector('span').textContent = `${minutesLeft} minutes and ${secondsLeft} seconds`;
-                        }
-                    }
-                }
-            }
-        }
-    });
   </script>
 
 </body>
